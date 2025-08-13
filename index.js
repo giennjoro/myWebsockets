@@ -48,12 +48,20 @@ app.use((err, req, res, next) => {
   }
 });
 
+// For JSON bodies
+app.use(express.json());
+
+// For form-urlencoded bodies (optional, if you send data as form)
+app.use(express.urlencoded({ extended: true }));
+
 // Broadcast endpoint for Laravel applications to send messages
 app.post('/broadcast', (req, res) => {
+  console.log(req.body, 'here dump');
+  
   const { tenantId, apiKey, message, room } = req.body;
 
-  if (!tenantId || !message || !apiKey) {
-    return res.status(400).json({ error: 'Missing tenantId, message, or apiKey' });
+  if (!tenantId || !message || !apiKey || !room) {
+    return res.status(400).json({ error: 'Missing tenantId, message, room or apiKey' });
   }
 
   if (apiKey !== BROADCAST_API_KEY) {
