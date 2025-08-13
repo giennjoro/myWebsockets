@@ -78,7 +78,7 @@ app.post('/broadcast', (req, res) => {
 
   // namespace.emit('chat message', message);
   let event_name = 'chat message';
-  namespace.to(room).emit(event_name, data);
+  namespace.to(room).emit(event_name, message);
   console.log(`Broadcasted message to /${tenantId}: ${message}`);
   res.status(200).json({ message: 'Message broadcasted successfully' });
 });
