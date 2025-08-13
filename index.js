@@ -33,6 +33,21 @@ app.get('/', (req, res) => {
   res.send('WebSocket server is running!');
 });
 
+// Error-handling middleware
+app.use((err, req, res, next) => {
+  console.error(err.stack); // Show full stack trace in console
+
+  // Show full error details only in development
+  if (process.env.NODE_ENV === 'development') {
+    res.status(500).json({
+      message: err.message,
+      stack: err.stack
+    });
+  } else {
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
 // Broadcast endpoint for Laravel applications to send messages
 app.post('/broadcast', (req, res) => {
   const { tenantId, apiKey, message, room } = req.body;
@@ -54,7 +69,7 @@ app.post('/broadcast', (req, res) => {
   }
 
   // namespace.emit('chat message', message);
-  let event_name = 'chat message'; 
+  let event_name = 'chat message';
   namespace.to(room).emit(event_name, data);
   console.log(`Broadcasted message to /${tenantId}: ${message}`);
   res.status(200).json({ message: 'Message broadcasted successfully' });
@@ -93,7 +108,7 @@ io.of(/.*/).use((socket, next) => {
 
       console.log(`Message sent by user in namespace ${namespace.name}: ${msg}, Room: ${room}`);
 
-      let event_name = 'chat message'; 
+      let event_name = 'chat message';
       // namespace.to(room).emit(event_name, msg);
       socket.to(room).emit(event_name, msg);
     });
