@@ -121,32 +121,35 @@ if (DASHBOARD_USERNAME && DASHBOARD_PASSWORD) {
         const clientsByNamespace = new Map();
         const roomsByNamespace = new Map();
 
-        // Iterate over all connected sockets across all namespaces
-        console.log('SERVER: getStats - Total connected sockets:', io.sockets.sockets.size);
-        for (const [socketId, socket] of io.sockets.sockets) {
-            console.log(`SERVER: getStats - Processing socket ID: ${socketId}, Namespace: ${socket.nsp.name}`);
-            console.log(`SERVER: getStats - Socket rooms:`, socket.rooms);
-            const namespaceName = socket.nsp.name;
+        // Get all connected namespaces
+        const allNamespaces = io.of('/').server.nsps;
 
-            if (namespaceName === '/dashboard') continue; // Skip dashboard clients
+        for (const [nspName, namespace] of allNamespaces.entries()) {
+            if (nspName === '/dashboard') continue; // Skip dashboard namespace
 
-            uniqueNamespaces.add(namespaceName);
+            uniqueNamespaces.add(nspName);
 
-            if (!clientsByNamespace.has(namespaceName)) {
-                clientsByNamespace.set(namespaceName, []);
-            }
-            clientsByNamespace.get(namespaceName).push(`${socketId} (${namespaceName})`);
+            // Get all sockets in the current namespace
+            const socketsInNamespace = await io.of(nspName).fetchSockets();
 
-            if (!roomsByNamespace.has(namespaceName)) {
-                roomsByNamespace.set(namespaceName, new Set());
-            }
-            // Get rooms for the current socket
-            const roomsSet = socket.rooms;
-            for (const room of roomsSet) {
-                // A room is not a socket ID if its name is different from the socketId
-                // and it's not the namespace name itself
-                if (room !== socketId && room !== namespaceName) {
-                    roomsByNamespace.get(namespaceName).add(room);
+            for (const socket of socketsInNamespace) {
+                if (!clientsByNamespace.has(nspName)) {
+                    clientsByNamespace.set(nspName, []);
+                }
+                clientsByNamespace.get(nspName).push(`${socket.id} (${nspName})`);
+
+                if (!roomsByNamespace.has(nspName)) {
+                    roomsByNamespace.set(nspName, new Set());
+                }
+
+                // Get rooms for the current socket
+                const roomsSet = socket.rooms;
+                for (const room of roomsSet) {
+                    // A room is not a socket ID if its name is different from the socketId
+                    // and it's not the namespace name itself
+                    if (room !== socket.id && room !== nspName) {
+                        roomsByNamespace.get(nspName).add(room);
+                    }
                 }
             }
         }
