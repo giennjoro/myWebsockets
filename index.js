@@ -31,6 +31,7 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'login.html'));
 });
 
+/*
 if (DASHBOARD_USERNAME && DASHBOARD_PASSWORD) {
     console.log('Dashboard enabled with username/password auth.');
 
@@ -142,6 +143,7 @@ if (DASHBOARD_USERNAME && DASHBOARD_PASSWORD) {
         res.status(403).send('Dashboard is disabled.');
     });
 }
+*/
 
 app.use((err, req, res, next) => {
   console.error(err.stack);
