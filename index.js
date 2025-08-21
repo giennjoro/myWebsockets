@@ -126,7 +126,8 @@ if (DASHBOARD_USERNAME && DASHBOARD_PASSWORD) {
             uniqueNamespaces.add(name);
 
             // Iterate over sockets in this specific namespace
-            for (const [socketId, socket] of namespace.sockets.entries()) {
+            if (namespace.sockets && typeof namespace.sockets.entries === 'function') {
+                for (const [socketId, socket] of namespace.sockets.entries()) {
                 if (!clientsByNamespace.has(name)) {
                     clientsByNamespace.set(name, []);
                 }
