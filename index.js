@@ -6,6 +6,8 @@ const path = require('path');
 const cookieParser = require('cookie-parser');
 require('dotenv').config();
 
+console.log('DEBUG: DASHBOARD_USERNAME:', process.env.DASHBOARD_USERNAME, 'DASHBOARD_PASSWORD:', process.env.DASHBOARD_PASSWORD);
+
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
