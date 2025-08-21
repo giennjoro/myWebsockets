@@ -108,9 +108,6 @@ if (DASHBOARD_USERNAME && DASHBOARD_PASSWORD) {
 
     async function getStats() {
         console.log('SERVER: Inside getStats function.');
-        console.log('SERVER: getStats - io.sockets.adapter.sids (all socket IDs and rooms):', io.sockets.adapter.sids);
-        console.log('SERVER: getStats - io.of('/').server.nsps (all namespaces):', io.of('/').server.nsps);
-
         const stats = {
             namespaces: [],
             rooms: {},
@@ -122,17 +119,19 @@ if (DASHBOARD_USERNAME && DASHBOARD_PASSWORD) {
             if (name === '/dashboard') continue;
             stats.namespaces.push(name);
             stats.rooms[name] = [];
-            const rooms = namespace.adapter.rooms;
-            if (rooms) {
-                for (const [room, sockets] of rooms.entries()) {
-                    if (!sockets.has(room)) {
-                        stats.rooms[name].push(room);
-                    } else {
-                        // This is a socket ID, not a room. We can count it as a client.
-                        // stats.clients.push(`${room} (${name})`); // Add client ID to list
+
+            // Get rooms for this namespace
+            const roomsInNamespace = namespace.adapter.rooms;
+            if (roomsInNamespace) {
+                for (const [roomName, roomSet] of roomsInNamespace.entries()) {
+                    // A room is not a socket ID if its name is different from any socket ID
+                    // For simplicity, we'll assume roomName is a room if it's not a socket ID
+                    if (!namespace.sockets.has(roomName)) { // If roomName is not a socket ID
+                        stats.rooms[name].push(roomName);
                     }
                 }
             }
+
             // Count clients in this namespace
             stats.clients.push(`${namespace.sockets.size} clients in ${name}`);
         }
