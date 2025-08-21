@@ -166,8 +166,30 @@
         dashboardSocket.on('message', (data) => {
             const messageList = document.getElementById('message-list');
             const li = document.createElement('li');
-            li.textContent = `[${data.namespace}] ${data.room}: ${data.message}`;
+            let messageText = '';
+
+            switch (data.type) {
+                case 'connection':
+                    messageText = `[${data.namespace}] Client ${data.socketId} connected.`;
+                    li.style.color = '#00FF00'; // Green for connection
+                    break;
+                case 'disconnection':
+                    messageText = `[${data.namespace}] Client ${data.socketId} disconnected.`;
+                    li.style.color = '#FF0000'; // Red for disconnection
+                    break;
+                case 'roomJoin':
+                    messageText = `[${data.namespace}] Client ${data.socketId} joined room ${data.room}.`;
+                    li.style.color = '#00FFFF'; // Cyan for room join
+                    break;
+                default:
+                    messageText = `[${data.namespace}] ${data.room ? `Room ${data.room}: ` : ''}${data.message}`;
+                    li.style.color = '#FFD700'; // Default color
+                    break;
+            }
+            li.textContent = messageText;
             messageList.appendChild(li);
+            // Scroll to bottom
+            messageList.scrollTop = messageList.scrollHeight;
         });
 
         dashboardSocket.on('disconnect', () => {

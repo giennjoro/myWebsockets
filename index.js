@@ -121,31 +121,30 @@ if (DASHBOARD_USERNAME && DASHBOARD_PASSWORD) {
             clients: []
         };
 
-        // Get all namespaces
-        for (const nspName of io.of('/').server.nsps.keys()) {
-            if (nspName === '/dashboard') continue;
-            stats.namespaces.push(nspName);
-        }
-        stats.namespaces.sort();
-
-        // Populate clients from activeClients map
+        // Populate namespaces and clients from activeClients map
         for (const [nspName, clientsSet] of activeClients.entries()) {
             if (nspName === '/dashboard') continue;
+            stats.namespaces.push(nspName);
             for (const clientId of clientsSet) {
                 stats.clients.push(`${clientId} (${nspName})`);
             }
         }
-        stats.clients.sort();
 
         // Populate rooms from activeRooms map
         for (const [nspName, roomsMap] of activeRooms.entries()) {
             if (nspName === '/dashboard') continue;
+            if (!stats.namespaces.includes(nspName)) { // Add namespace if not already added by activeClients
+                stats.namespaces.push(nspName);
+            }
             stats.rooms[nspName] = [];
             for (const [roomName, clientsSet] of roomsMap.entries()) {
                 stats.rooms[nspName].push(`${roomName} (${clientsSet.size} clients)`);
             }
             stats.rooms[nspName].sort();
         }
+
+        stats.namespaces.sort();
+        stats.clients.sort();
 
         return stats;
     }
