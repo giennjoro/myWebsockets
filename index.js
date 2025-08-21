@@ -175,6 +175,7 @@ app.post('/broadcast', (req, res) => {
   const namespace = io.of(`/${tenantId}`);
   namespace.to(room).emit('chat message', message);
   console.log(`SERVER EMIT: Broadcasted message to /${tenantId} room ${room}: ${message}`);
+  console.log('SERVER: Debug - Raw broadcast message:', message);
   if (DASHBOARD_USERNAME && DASHBOARD_PASSWORD) {
     io.of('/dashboard').emit('message', { namespace: `/${tenantId}`, room, message: `(Broadcast) ${message}` });
   }
@@ -214,15 +215,16 @@ io.of(/.*/).use((socket, next) => {
 
     // Log room join to dashboard
     if (DASHBOARD_USERNAME && DASHBOARD_PASSWORD) {
-      io.of('/dashboard').emit('message', { type: 'roomJoin', namespace: socket.nsp.name, room: room, socketId: socket.id });
+      io.of('/dashboard').emit('dashboard_log', { type: 'roomJoin', namespace: socket.nsp.name, room: room, socketId: socket.id });
     }
 
     socket.on(room, (msg) => {
       const namespace = socket.nsp;
       socket.to(room).emit('chat message', msg);
       console.log(`SERVER EMIT: Client in ${namespace.name} room ${room} sent message: ${msg}`);
+      console.log('SERVER: Debug - Raw chat message from client:', msg);
       if (DASHBOARD_USERNAME && DASHBOARD_PASSWORD) {
-        io.of('/dashboard').emit('message', { namespace: namespace.name, room, message: msg });
+        io.of('/dashboard').emit('message', { namespace: namespace.name, room: 'main', message: msg });
       }
     });
     return next();
@@ -244,9 +246,10 @@ io.of(/.*/).on('connection', (socket) => {
   activeClients.get(namespace.name).add(socket.id);
 
   // Log connection to dashboard
-  if (DASHBOARD_USERNAME && DASHBOARD_PASSWORD) {
-    io.of('/dashboard').emit('message', { type: 'connection', namespace: namespace.name, socketId: socket.id });
-  }
+  // Log connection to dashboard
+    if (DASHBOARD_USERNAME && DASHBOARD_PASSWORD) {
+      io.of('/dashboard').emit('dashboard_log', { type: 'connection', namespace: namespace.name, socketId: socket.id });
+    }
 
   console.log(`SERVER: Current total connected sockets (io.sockets.sockets.size): ${io.sockets.sockets.size}`);
   console.log(`SERVER: Sockets in default namespace (io.of('/').sockets.size): ${io.of('/').sockets.size}`);
@@ -282,7 +285,7 @@ io.of(/.*/).on('connection', (socket) => {
 
     // Log disconnection to dashboard
     if (DASHBOARD_USERNAME && DASHBOARD_PASSWORD) {
-      io.of('/dashboard').emit('message', { type: 'disconnection', namespace: namespace.name, socketId: socket.id });
+      io.of('/dashboard').emit('dashboard_log', { type: 'disconnection', namespace: namespace.name, socketId: socket.id });
     }
   });
 });

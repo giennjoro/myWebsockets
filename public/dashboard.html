@@ -107,6 +107,8 @@
             <h2>Clients</h2>
             <p>Total connected: <span id="client-count">0</span></p>
             <ul id="client-list"></ul>
+            <h3>Client Activity Log</h3>
+            <ul id="client-log-list"></ul>
         </div>
         <div class="panel" id="messages">
             <h2>Messages</h2>
@@ -166,6 +168,13 @@
         dashboardSocket.on('message', (data) => {
             const messageList = document.getElementById('message-list');
             const li = document.createElement('li');
+            li.textContent = `[${data.namespace}] ${data.room}: ${data.message}`;
+            messageList.appendChild(li);
+        });
+
+        dashboardSocket.on('dashboard_log', (data) => {
+            const clientLogList = document.getElementById('client-log-list');
+            const li = document.createElement('li');
             let messageText = '';
 
             switch (data.type) {
@@ -187,9 +196,9 @@
                     break;
             }
             li.textContent = messageText;
-            messageList.appendChild(li);
+            clientLogList.appendChild(li);
             // Scroll to bottom
-            messageList.scrollTop = messageList.scrollHeight;
+            clientLogList.scrollTop = clientLogList.scrollHeight;
         });
 
         dashboardSocket.on('disconnect', () => {
