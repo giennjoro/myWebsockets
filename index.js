@@ -4,7 +4,6 @@ const jwt = require('jsonwebtoken');
 const { Server } = require('socket.io');
 const path = require('path');
 const cookieParser = require('cookie-parser');
-require('dotenv').config();
 
 console.log('DEBUG: DASHBOARD_USERNAME:', process.env.DASHBOARD_USERNAME, 'DASHBOARD_PASSWORD:', process.env.DASHBOARD_PASSWORD);
 
