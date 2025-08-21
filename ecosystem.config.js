@@ -12,7 +12,8 @@ module.exports = {
       PORT: 3001,
       DASHBOARD_USERNAME: 'writersAdmin',
       DASHBOARD_PASSWORD: '@Writer12',
-      JWT_SECRET: 'x9/o3ORElbgAGgfIHfryLc8d6gsSSZEbGWxtu0DNDOo='
+      JWT_SECRET: 'YOUR_NEW_GENERATED_SECRET_HERE',
+      BROADCAST_API_KEY: 'NFf8saf.GiugGxdnsGDNIGDlihihiGUUH2sd5'
     },
     error_file: '/var/log/pm2/websockets-error.log',
     out_file: '/var/log/pm2/websockets-out.log',
