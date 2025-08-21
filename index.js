@@ -107,34 +107,66 @@ if (DASHBOARD_USERNAME && DASHBOARD_PASSWORD) {
     });
 
     async function getStats() {
-        console.log('SERVER: Inside getStats function.');
+        console.log('SERVER: Inside getStats function (rewritten).');
         const stats = {
             namespaces: [],
             rooms: {},
             clients: []
         };
 
-        const allNamespaces = io.nsps;
-        for (const [name, namespace] of allNamespaces.entries()) {
-            if (name === '/dashboard') continue;
-            stats.namespaces.push(name);
-            stats.rooms[name] = [];
+        const allConnectedSocketIds = io.sockets.adapter.sids; // Map of socketId -> Set of rooms
+        const allNamespaces = io.nsps; // Map of namespaceName -> Namespace object
 
-            // Get rooms for this namespace
-            const roomsInNamespace = namespace.adapter.rooms;
-            if (roomsInNamespace && typeof roomsInNamespace.entries === 'function') {
-                for (const [roomName, roomSet] of roomsInNamespace.entries()) {
-                    // A room is not a socket ID if its name is different from any socket ID
-                    // For simplicity, we'll assume roomName is a room if it's not a socket ID
-                    if (!namespace.sockets.has(roomName)) { // If roomName is not a socket ID
-                        stats.rooms[name].push(roomName);
-                    }
+        const uniqueNamespaces = new Set();
+        const clientsByNamespace = new Map();
+        const roomsByNamespace = new Map();
+
+        for (const [socketId, roomsSet] of allConnectedSocketIds.entries()) {
+            // Determine the namespace for this socket
+            let namespaceName = '/'; // Default namespace
+            for (const ns of allNamespaces.keys()) {
+                if (ns !== '/' && roomsSet.has(ns)) { // If the socket is in a custom namespace room
+                    namespaceName = ns;
+                    break;
                 }
             }
 
-            // Count clients in this namespace
-            stats.clients.push(`${namespace.sockets.size} clients in ${name}`);
+            if (namespaceName === '/dashboard') continue; // Skip dashboard clients
+
+            uniqueNamespaces.add(namespaceName);
+
+            if (!clientsByNamespace.has(namespaceName)) {
+                clientsByNamespace.set(namespaceName, []);
+            }
+            clientsByNamespace.get(namespaceName).push(`${socketId} (${namespaceName})`);
+
+            if (!roomsByNamespace.has(namespaceName)) {
+                roomsByNamespace.set(namespaceName, new Set());
+            }
+            for (const room of roomsSet) {
+                // A room is not a socket ID if its name is different from the socketId
+                // and it's not the namespace name itself
+                if (room !== socketId && room !== namespaceName) {
+                    roomsByNamespace.get(namespaceName).add(room);
+                }
+            }
         }
+
+        stats.namespaces = Array.from(uniqueNamespaces).filter(name => name !== '/dashboard').sort();
+
+        for (const nsName of stats.namespaces) {
+            stats.rooms[nsName] = Array.from(roomsByNamespace.get(nsName) || []).sort();
+            // Clients are already pushed with namespace info, so just concatenate
+            // This part needs to be careful not to duplicate if clients are pushed per namespace
+        }
+
+        // Re-collect clients to ensure correct format and avoid duplicates if logic changes
+        stats.clients = [];
+        for (const nsName of stats.namespaces) {
+            const clientsInNs = clientsByNamespace.get(nsName) || [];
+            stats.clients = stats.clients.concat(clientsInNs);
+        }
+        stats.clients.sort();
 
         return stats;
     }
