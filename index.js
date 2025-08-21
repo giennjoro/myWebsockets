@@ -111,26 +111,19 @@ if (DASHBOARD_USERNAME && DASHBOARD_PASSWORD) {
     });
 
     async function getStats() {
-        const allNamespaces = io.of('/').server.nsps; // Map of namespaceName -> Namespace object
-
-        console.log('SERVER: getStats - io.sockets.adapter.sids:', allConnectedSocketIds);
-        console.log('SERVER: getStats - allNamespaces:', allNamespaces);
         const stats = {
             namespaces: [],
             rooms: {},
             clients: []
         };
 
-        if (allNamespaces) { // Add check for allNamespaces
-            for (const [name, namespace] of allNamespaces.entries()) {
-            // Determine the namespace for this socket
-            let namespaceName = '/'; // Default namespace
-            for (const ns of allNamespaces.keys()) {
-                if (ns !== '/' && roomsSet.has(ns)) { // If the socket is in a custom namespace room
-                    namespaceName = ns;
-                    break;
-                }
-            }
+        const uniqueNamespaces = new Set();
+        const clientsByNamespace = new Map();
+        const roomsByNamespace = new Map();
+
+        // Iterate over all connected sockets across all namespaces
+        for (const [socketId, socket] of io.sockets.sockets) {
+            const namespaceName = socket.nsp.name;
 
             if (namespaceName === '/dashboard') continue; // Skip dashboard clients
 
@@ -144,6 +137,8 @@ if (DASHBOARD_USERNAME && DASHBOARD_PASSWORD) {
             if (!roomsByNamespace.has(namespaceName)) {
                 roomsByNamespace.set(namespaceName, new Set());
             }
+            // Get rooms for the current socket
+            const roomsSet = socket.rooms;
             for (const room of roomsSet) {
                 // A room is not a socket ID if its name is different from the socketId
                 // and it's not the namespace name itself
@@ -157,15 +152,7 @@ if (DASHBOARD_USERNAME && DASHBOARD_PASSWORD) {
 
         for (const nsName of stats.namespaces) {
             stats.rooms[nsName] = Array.from(roomsByNamespace.get(nsName) || []).sort();
-            // Clients are already pushed with namespace info, so just concatenate
-            // This part needs to be careful not to duplicate if clients are pushed per namespace
-        }
-
-        // Re-collect clients to ensure correct format and avoid duplicates if logic changes
-        stats.clients = [];
-        for (const nsName of stats.namespaces) {
-            const clientsInNs = clientsByNamespace.get(nsName) || [];
-            stats.clients = stats.clients.concat(clientsInNs);
+            stats.clients = stats.clients.concat(clientsByNamespace.get(nsName) || []);
         }
         stats.clients.sort();
 
@@ -265,4 +252,3 @@ server.listen(PORT, () => {
   console.log(`Server process.env.NODE_ENV: ${process.env.NODE_ENV}`);
   console.log(`Server process.env.PORT: ${process.env.PORT}`);
 });
-
