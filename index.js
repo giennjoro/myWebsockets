@@ -31,7 +31,6 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'login.html'));
 });
 
-/*
 if (DASHBOARD_USERNAME && DASHBOARD_PASSWORD) {
     console.log('Dashboard enabled with username/password auth.');
 
