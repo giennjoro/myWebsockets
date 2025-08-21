@@ -108,6 +108,8 @@ if (DASHBOARD_USERNAME && DASHBOARD_PASSWORD) {
 
     async function getStats() {
         console.log('SERVER: Inside getStats function.');
+        console.log('SERVER: getStats - io.sockets.adapter.sids (all socket IDs and rooms):', io.sockets.adapter.sids);
+        console.log('SERVER: getStats - io.of('/').server.nsps (all namespaces):', io.of('/').server.nsps);
         const stats = {
             namespaces: [],
             rooms: {},
