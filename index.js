@@ -7,6 +7,7 @@ const cookieParser = require('cookie-parser');
 
 console.log('DEBUG: DASHBOARD_USERNAME:', process.env.DASHBOARD_USERNAME, 'DASHBOARD_PASSWORD:', process.env.DASHBOARD_PASSWORD);
 console.log('DEBUG: App trying to listen on port:', process.env.PORT);
+console.log('DEBUG: JWT_SECRET:', process.env.JWT_SECRET);
 
 const app = express();
 const server = http.createServer(app);
