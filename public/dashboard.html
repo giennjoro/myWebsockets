@@ -54,8 +54,16 @@
             box-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
             flex: 1;
             min-width: 280px;
-            max-width: 45%;
             box-sizing: border-box;
+        }
+        #namespaces {
+            max-width: 20%; /* Make namespaces panel smaller */
+        }
+        #messages {
+            max-width: 70%; /* Make messages panel wider */
+        }
+        #rooms, #clients {
+            max-width: 40%; /* Adjust other panels accordingly */
         }
         .panel h2 {
             color: #FFD700;
@@ -170,14 +178,27 @@
             const li = document.createElement('li');
             let messageContent = data.message;
 
-            // If the message is a string that looks like HTML, parse it
-            if (typeof messageContent === 'string' && messageContent.trim().startsWith('<')) {
-                const tempDiv = document.createElement('div');
-                tempDiv.innerHTML = messageContent;
-                messageContent = tempDiv.textContent || tempDiv.innerText || '[HTML message - text not found]';
-            } else if (typeof messageContent === 'object' && messageContent !== null) {
-                // If the message is an object, try to extract the relevant text
-                if (messageContent.body) {
+            // Try to parse messageContent as JSON if it's a string
+            if (typeof messageContent === 'string') {
+                try {
+                    const parsedContent = JSON.parse(messageContent);
+                    // If parsing is successful, use the parsed content
+                    if (typeof parsedContent === 'object' && parsedContent !== null) {
+                        messageContent = parsedContent;
+                    }
+                } catch (e) {
+                    // Not a JSON string, proceed as is
+                }
+            }
+
+            // Now, process messageContent based on its type
+            if (typeof messageContent === 'object' && messageContent !== null) {
+                if (messageContent.html) {
+                    // Create a temporary div to parse the HTML and get textContent
+                    const tempDiv = document.createElement('div');
+                    tempDiv.innerHTML = messageContent.html;
+                    messageContent = tempDiv.textContent || tempDiv.innerText || '[HTML message - text not found]';
+                } else if (messageContent.body) {
                     messageContent = messageContent.body;
                 } else {
                     messageContent = JSON.stringify(messageContent);
