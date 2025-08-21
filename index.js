@@ -111,10 +111,8 @@ if (DASHBOARD_USERNAME && DASHBOARD_PASSWORD) {
     });
 
     async function getStats() {
-        const allConnectedSocketIds = io.sockets.adapter.sids; // Map of socketId -> Set of rooms
-        const allNamespaces = io.nsps; // Map of namespaceName -> Namespace object
+        const allNamespaces = io.of('/').server.nsps; // Map of namespaceName -> Namespace object
 
-        console.log('SERVER: Inside getStats function (rewritten again).');
         console.log('SERVER: getStats - io.sockets.adapter.sids:', allConnectedSocketIds);
         console.log('SERVER: getStats - allNamespaces:', allNamespaces);
         const stats = {
@@ -123,11 +121,8 @@ if (DASHBOARD_USERNAME && DASHBOARD_PASSWORD) {
             clients: []
         };
 
-        const uniqueNamespaces = new Set();
-        const clientsByNamespace = new Map();
-        const roomsByNamespace = new Map();
-
-        for (const [socketId, roomsSet] of allConnectedSocketIds.entries()) {
+        if (allNamespaces) { // Add check for allNamespaces
+            for (const [name, namespace] of allNamespaces.entries()) {
             // Determine the namespace for this socket
             let namespaceName = '/'; // Default namespace
             for (const ns of allNamespaces.keys()) {
