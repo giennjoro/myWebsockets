@@ -168,8 +168,26 @@
         dashboardSocket.on('message', (data) => {
             const messageList = document.getElementById('message-list');
             const li = document.createElement('li');
-            li.textContent = `[${data.namespace}] ${data.room}: ${data.message}`;
+            let messageContent = data.message;
+
+            // If the message is an object, try to extract the relevant text
+            if (typeof messageContent === 'object' && messageContent !== null) {
+                if (messageContent.html) {
+                    // Create a temporary div to parse the HTML and get textContent
+                    const tempDiv = document.createElement('div');
+                    tempDiv.innerHTML = messageContent.html;
+                    messageContent = tempDiv.textContent || tempDiv.innerText || '[HTML message - text not found]';
+                } else if (messageContent.body) {
+                    messageContent = messageContent.body;
+                } else {
+                    messageContent = JSON.stringify(messageContent);
+                }
+            }
+
+            li.textContent = `[${data.namespace}] ${data.room ? `${data.room}: ` : ''}${messageContent}`;
             messageList.appendChild(li);
+            // Scroll to bottom
+            messageList.scrollTop = messageList.scrollHeight;
         });
 
         dashboardSocket.on('dashboard_log', (data) => {
