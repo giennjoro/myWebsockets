@@ -4,6 +4,7 @@ const jwt = require('jsonwebtoken');
 const { Server } = require('socket.io');
 const path = require('path');
 const cookieParser = require('cookie-parser');
+const cheerio = require('cheerio');
 
 console.log('DEBUG: DASHBOARD_USERNAME:', process.env.DASHBOARD_USERNAME, 'DASHBOARD_PASSWORD:', process.env.DASHBOARD_PASSWORD);
 console.log('DEBUG: App trying to listen on port:', process.env.PORT);
@@ -180,13 +181,13 @@ app.post('/broadcast', (req, res) => {
   let dashboardMessage = message;
   if (typeof message === 'object' && message !== null) {
     if (message.html) {
-      // Extract text from HTML using a simple regex for <span> tags within message-text
-      const match = message.html.match(/<div class="message-text bg-admin">\s*<span>(.*?)<\/span>/s);
-      if (match && match[1]) {
-        dashboardMessage = match[1].trim();
-      } else {
+      const $ = cheerio.load(message.html);
+      dashboardMessage = $('.message-text span').text().trim();
+      if (!dashboardMessage) {
         dashboardMessage = '[HTML message - text not found]';
       }
+    } else if (message.body) {
+      dashboardMessage = message.body;
     } else {
       dashboardMessage = JSON.stringify(message);
     }
@@ -245,13 +246,13 @@ io.of(/.*/).use((socket, next) => {
       let dashboardMessage = msg;
       if (typeof msg === 'object' && msg !== null) {
         if (msg.html) {
-          // Extract text from HTML using a simple regex for <span> tags within message-text
-          const match = msg.html.match(/<div class="message-text bg-admin">\s*<span>(.*?)<\/span>/s);
-          if (match && match[1]) {
-            dashboardMessage = match[1].trim();
-          } else {
+          const $ = cheerio.load(msg.html);
+          dashboardMessage = $('.message-text span').text().trim();
+          if (!dashboardMessage) {
             dashboardMessage = '[HTML message - text not found]';
           }
+        } else if (msg.body) {
+          dashboardMessage = msg.body;
         } else {
           dashboardMessage = JSON.stringify(msg);
         }
