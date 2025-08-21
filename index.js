@@ -111,56 +111,7 @@ if (DASHBOARD_USERNAME && DASHBOARD_PASSWORD) {
     });
 
     async function getStats(io) {
-        const stats = {
-            namespaces: [],
-            rooms: {},
-            clients: []
-        };
-
-        const uniqueNamespaces = new Set();
-        const clientsByNamespace = new Map();
-        const roomsByNamespace = new Map();
-
-        // Iterate over all connected namespaces
-        for (const nspName of io.of('/').server.nsps.keys()) {
-            if (nspName === '/dashboard') continue; // Skip dashboard namespace
-
-            uniqueNamespaces.add(nspName);
-
-            // Get all sockets in the current namespace
-            const socketsInNamespace = io.of(nspName).sockets;
-
-            for (const [socketId, socket] of socketsInNamespace) {
-                if (!clientsByNamespace.has(nspName)) {
-                    clientsByNamespace.set(nspName, []);
-                }
-                clientsByNamespace.get(nspName).push(`${socketId} (${nspName})`);
-
-                if (!roomsByNamespace.has(nspName)) {
-                    roomsByNamespace.set(nspName, new Set());
-                }
-
-                // Get rooms for the current socket
-                const roomsSet = socket.rooms;
-                for (const room of roomsSet) {
-                    // A room is not a socket ID if its name is different from the socketId
-                    // and it's not the namespace name itself
-                    if (room !== socketId && room !== nspName) {
-                        roomsByNamespace.get(nspName).add(room);
-                    }
-                }
-            }
-        }
-
-        stats.namespaces = Array.from(uniqueNamespaces).filter(name => name !== '/dashboard').sort();
-
-        for (const nsName of stats.namespaces) {
-            stats.rooms[nsName] = Array.from(roomsByNamespace.get(nsName) || []).sort();
-            stats.clients = stats.clients.concat(clientsByNamespace.get(nsName) || []);
-        }
-        stats.clients.sort();
-
-        return stats;
+        return { namespaces: [], rooms: {}, clients: [] };
     }
 } else {
     console.warn('Dashboard disabled: DASHBOARD_USERNAME or DASHBOARD_PASSWORD not set.');
