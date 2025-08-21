@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebSocket Dashboard</title>
+    <style>
+        body {
+            font-family: 'Share Tech Mono', monospace;
+            background-color: #1a1a1a;
+            color: #FFD700;
+            margin: 0;
+            padding: 20px;
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><circle cx="50" cy="50" r="1" fill="%23333" /></svg>');
+            background-size: 10px 10px;
+        }
+        h1 {
+            color: #FFD700;
+            text-align: center;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #FFD700;
+            padding-bottom: 10px;
+            position: relative;
+        }
+        h1 button {
+            position: absolute;
+            right: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            background-color: #FFD700;
+            color: #1a1a1a;
+            padding: 8px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+        h1 button:hover {
+            background-color: #e6c200;
+            color: #000;
+        }
+        .container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            justify-content: center;
+        }
+        .panel {
+            background-color: #000;
+            border: 1px solid #FFD700;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
+            flex: 1;
+            min-width: 280px;
+            max-width: 45%;
+            box-sizing: border-box;
+        }
+        .panel h2 {
+            color: #FFD700;
+            margin-top: 0;
+            border-bottom: 1px solid #666;
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+        }
+        .panel ul {
+            list-style: none;
+            padding: 0;
+            max-height: 300px;
+            overflow-y: auto;
+            border: 1px solid #333;
+            padding: 10px;
+            background-color: #0a0a0a;
+        }
+        .panel ul li {
+            padding: 5px 0;
+            border-bottom: 1px dashed #222;
+            color: #ccc;
+        }
+        .panel ul li:last-child {
+            border-bottom: none;
+        }
+        #messages ul li {
+            color: #FFD700;
+        }
+        #client-count {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #FFD700;
+        }
+    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
+</head>
+<body>
+    <h1>WebSocket Server Dashboard <button id="logoutButton" style="float: right;">Logout</button></h1>
+    <div class="container">
+        <div class="panel" id="namespaces">
+            <h2>Namespaces</h2>
+            <ul id="namespace-list"></ul>
+        </div>
+        <div class="panel" id="rooms">
+            <h2>Rooms</h2>
+            <ul id="room-list"></ul>
+        </div>
+        <div class="panel" id="clients">
+            <h2>Clients</h2>
+            <p>Total connected: <span id="client-count">0</span></p>
+            <ul id="client-list"></ul>
+        </div>
+        <div class="panel" id="messages">
+            <h2>Messages</h2>
+            <ul id="message-list"></ul>
+        </div>
+    </div>
+
+    <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+    <script>
+        const dashboardSocket = io('/dashboard');
+
+        dashboardSocket.on('connect', () => {
+            console.log('Connected to dashboard namespace');
+        });
+
+        dashboardSocket.on('connect_error', (err) => {
+            console.error('Dashboard connection error:', err.message);
+            // Redirect to login if auth fails
+            if (err.message.includes('Authentication error')) {
+                window.location.href = '/';
+            }
+            document.body.innerHTML = `<h1>Error connecting to dashboard: ${err.message}</h1>`;
+        });
+
+        dashboardSocket.on('stats', (data) => {
+            // Update namespaces
+            const namespaceList = document.getElementById('namespace-list');
+            namespaceList.innerHTML = '';
+            data.namespaces.forEach(ns => {
+                const li = document.createElement('li');
+                li.textContent = ns;
+                namespaceList.appendChild(li);
+            });
+
+            // Update rooms
+            const roomList = document.getElementById('room-list');
+            roomList.innerHTML = '';
+            for (const ns in data.rooms) {
+                data.rooms[ns].forEach(room => {
+                    const li = document.createElement('li');
+                    li.textContent = `${ns}: ${room}`;
+                    roomList.appendChild(li);
+                });
+            }
+
+            // Update clients
+            document.getElementById('client-count').textContent = data.clients.length;
+            const clientList = document.getElementById('client-list');
+            clientList.innerHTML = '';
+            data.clients.forEach(client => {
+                const li = document.createElement('li');
+                li.textContent = client;
+                clientList.appendChild(li);
+            });
+        });
+
+        dashboardSocket.on('message', (data) => {
+            const messageList = document.getElementById('message-list');
+            const li = document.createElement('li');
+            li.textContent = `[${data.namespace}] ${data.room}: ${data.message}`;
+            messageList.appendChild(li);
+        });
+
+        dashboardSocket.on('disconnect', () => {
+            console.log('Disconnected from dashboard namespace');
+        });
+
+        document.getElementById('logoutButton').addEventListener('click', () => {
+            fetch('/dashboard/logout')
+                .then(() => {
+                    window.location.href = '/';
+                })
+                .catch(err => {
+                    console.error('Logout failed:', err);
+                    alert('Logout failed. Please try again.');
+                });
+        });
+    </script>
+</body>
+</html>
