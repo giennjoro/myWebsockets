@@ -123,9 +123,6 @@ if (DASHBOARD_USERNAME && DASHBOARD_PASSWORD) {
             clients: []
         };
 
-        const allConnectedSocketIds = io.sockets.adapter.sids; // Map of socketId -> Set of rooms
-        const allNamespaces = io.nsps; // Map of namespaceName -> Namespace object
-
         const uniqueNamespaces = new Set();
         const clientsByNamespace = new Map();
         const roomsByNamespace = new Map();
