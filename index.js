@@ -121,14 +121,21 @@ if (DASHBOARD_USERNAME && DASHBOARD_PASSWORD) {
             clients: []
         };
 
-        // Populate namespaces and clients from activeClients map
-        for (const [nspName, clientsSet] of activeClients.entries()) {
+        // Get all namespaces
+        for (const nspName of io.of('/').server.nsps.keys()) {
             if (nspName === '/dashboard') continue;
             stats.namespaces.push(nspName);
+        }
+        stats.namespaces.sort();
+
+        // Populate clients from activeClients map
+        for (const [nspName, clientsSet] of activeClients.entries()) {
+            if (nspName === '/dashboard') continue;
             for (const clientId of clientsSet) {
                 stats.clients.push(`${clientId} (${nspName})`);
             }
         }
+        stats.clients.sort();
 
         // Populate rooms from activeRooms map
         for (const [nspName, roomsMap] of activeRooms.entries()) {
@@ -139,9 +146,6 @@ if (DASHBOARD_USERNAME && DASHBOARD_PASSWORD) {
             }
             stats.rooms[nspName].sort();
         }
-
-        stats.namespaces.sort();
-        stats.clients.sort();
 
         return stats;
     }
