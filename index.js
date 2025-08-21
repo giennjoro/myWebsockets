@@ -121,35 +121,34 @@ if (DASHBOARD_USERNAME && DASHBOARD_PASSWORD) {
         const clientsByNamespace = new Map();
         const roomsByNamespace = new Map();
 
-        // Get all connected namespaces
-        const allNamespaces = io.of('/').server.nsps;
-
-        for (const [nspName, namespace] of allNamespaces.entries()) {
-            if (nspName === '/dashboard') continue; // Skip dashboard namespace
-
-            uniqueNamespaces.add(nspName);
-
-            // Get all sockets in the current namespace
-            const socketsInNamespace = await io.of(nspName).fetchSockets();
-
-            for (const socket of socketsInNamespace) {
-                if (!clientsByNamespace.has(nspName)) {
-                    clientsByNamespace.set(nspName, []);
+        // Iterate over all connected sockets using the adapter's sids
+        for (const [socketId, roomsSet] of io.sockets.adapter.sids) {
+            // Determine the namespace for this socket
+            let namespaceName = '/'; // Default namespace
+            for (const ns of io.of('/').server.nsps.keys()) {
+                if (ns !== '/' && roomsSet.has(ns)) { // If the socket is in a custom namespace room
+                    namespaceName = ns;
+                    break;
                 }
-                clientsByNamespace.get(nspName).push(`${socket.id} (${nspName})`);
+            }
 
-                if (!roomsByNamespace.has(nspName)) {
-                    roomsByNamespace.set(nspName, new Set());
-                }
+            if (namespaceName === '/dashboard') continue; // Skip dashboard clients
 
-                // Get rooms for the current socket
-                const roomsSet = socket.rooms;
-                for (const room of roomsSet) {
-                    // A room is not a socket ID if its name is different from the socketId
-                    // and it's not the namespace name itself
-                    if (room !== socket.id && room !== nspName) {
-                        roomsByNamespace.get(nspName).add(room);
-                    }
+            uniqueNamespaces.add(namespaceName);
+
+            if (!clientsByNamespace.has(namespaceName)) {
+                clientsByNamespace.set(namespaceName, []);
+            }
+            clientsByNamespace.get(namespaceName).push(`${socketId} (${namespaceName})`);
+
+            if (!roomsByNamespace.has(namespaceName)) {
+                roomsByNamespace.set(namespaceName, new Set());
+            }
+            for (const room of roomsSet) {
+                // A room is not a socket ID if its name is different from the socketId
+                // and it's not the namespace name itself
+                if (room !== socketId && room !== namespaceName) {
+                    roomsByNamespace.get(namespaceName).add(room);
                 }
             }
         }
