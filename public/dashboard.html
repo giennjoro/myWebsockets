@@ -170,14 +170,14 @@
             const li = document.createElement('li');
             let messageContent = data.message;
 
-            // If the message is an object, try to extract the relevant text
-            if (typeof messageContent === 'object' && messageContent !== null) {
-                if (messageContent.html) {
-                    // Create a temporary div to parse the HTML and get textContent
-                    const tempDiv = document.createElement('div');
-                    tempDiv.innerHTML = messageContent.html;
-                    messageContent = tempDiv.textContent || tempDiv.innerText || '[HTML message - text not found]';
-                } else if (messageContent.body) {
+            // If the message is a string that looks like HTML, parse it
+            if (typeof messageContent === 'string' && messageContent.trim().startsWith('<')) {
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = messageContent;
+                messageContent = tempDiv.textContent || tempDiv.innerText || '[HTML message - text not found]';
+            } else if (typeof messageContent === 'object' && messageContent !== null) {
+                // If the message is an object, try to extract the relevant text
+                if (messageContent.body) {
                     messageContent = messageContent.body;
                 } else {
                     messageContent = JSON.stringify(messageContent);
