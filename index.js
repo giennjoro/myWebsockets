@@ -111,8 +111,11 @@ if (DASHBOARD_USERNAME && DASHBOARD_PASSWORD) {
     });
 
     async function getStats() {
+        const allConnectedSocketIds = io.sockets.adapter.sids; // Map of socketId -> Set of rooms
+        const allNamespaces = io.nsps; // Map of namespaceName -> Namespace object
+
         console.log('SERVER: Inside getStats function (rewritten again).');
-        console.log('SERVER: getStats - io.sockets.adapter.sids:', io.sockets.adapter.sids);
+        console.log('SERVER: getStats - io.sockets.adapter.sids:', allConnectedSocketIds);
         console.log('SERVER: getStats - allNamespaces:', allNamespaces);
         const stats = {
             namespaces: [],
