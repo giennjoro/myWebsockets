@@ -110,49 +110,17 @@ if (DASHBOARD_USERNAME && DASHBOARD_PASSWORD) {
         console.log('SERVER: Inside getStats function.');
         console.log('SERVER: getStats - io.sockets.adapter.sids (all socket IDs and rooms):', io.sockets.adapter.sids);
         console.log('SERVER: getStats - io.of('/').server.nsps (all namespaces):', io.of('/').server.nsps);
+
         const stats = {
             namespaces: [],
             rooms: {},
             clients: []
         };
 
-        const allSockets = await io.fetchSockets();
-        console.log('SERVER: getStats - allSockets count:', allSockets.length);
-
-        const uniqueNamespaces = new Set();
-        const clientsByNamespace = new Map();
-        const roomsByNamespace = new Map();
-
-        for (const socket of allSockets) {
-            const namespaceName = socket.nsp.name;
-            uniqueNamespaces.add(namespaceName);
-            console.log(`SERVER: getStats - Processing socket ${socket.id} in namespace ${namespaceName}`);
-
-            if (!clientsByNamespace.has(namespaceName)) {
-                clientsByNamespace.set(namespaceName, []);
-            }
-            clientsByNamespace.get(namespaceName).push(`${socket.id} (${namespaceName})`);
-
-            if (!roomsByNamespace.has(namespaceName)) {
-                roomsByNamespace.set(namespaceName, new Set());
-            }
-            for (const room of socket.rooms) {
-                if (room !== socket.id) {
-                    roomsByNamespace.get(namespaceName).add(room);
-                    console.log(`SERVER: getStats - Socket ${socket.id} in room ${room}`);
-                }
-            }
-        }
-        console.log('SERVER: getStats - uniqueNamespaces:', Array.from(uniqueNamespaces));
-        console.log('SERVER: getStats - clientsByNamespace:', Object.fromEntries(clientsByNamespace));
-        console.log('SERVER: getStats - roomsByNamespace:', Object.fromEntries(roomsByNamespace));
-
-        stats.namespaces = Array.from(uniqueNamespaces).filter(name => name !== '/dashboard');
-
-        for (const nsName of stats.namespaces) {
-            stats.rooms[nsName] = Array.from(roomsByNamespace.get(nsName) || []);
-            stats.clients = stats.clients.concat(clientsByNamespace.get(nsName) || []);
-        }
+        // Simplified stats collection for debugging
+        stats.clients.push(`Total connected: ${io.sockets.sockets.size}`);
+        stats.clients.push(`Default namespace: ${io.of('/').sockets.size}`);
+        stats.clients.push(`Tenant1 namespace: ${io.of('/tenant1').sockets.size}`);
 
         return stats;
     }
@@ -193,19 +161,23 @@ const authenticateRoutes = require('./routes/authenticate')();
 app.use(authenticateRoutes);
 
 io.of(/.*/).use((socket, next) => {
+  console.log(`SERVER: Authentication middleware hit for namespace: ${socket.nsp.name}`);
   if (socket.nsp.name === '/dashboard') return next();
   const tenantId = socket.nsp.name.substring(1);
   const token = socket.handshake.query.token;
   if (!token) {
+    console.log(`SERVER: Auth error - No token provided for ${socket.nsp.name}`);
     return next(new Error('Authentication error: No token provided'));
   }
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
     if (decoded.tenantId !== tenantId) {
+      console.log(`SERVER: Auth error - Tenant ID mismatch for ${socket.nsp.name}`);
       return next(new Error('Authentication error: Tenant ID mismatch'));
     }
     let room = decoded.userData.room;
     socket.join(room);
+    console.log(`SERVER: Client ${socket.id} joined room ${room} in namespace ${socket.nsp.name}`);
     socket.on(room, (msg) => {
       const namespace = socket.nsp;
       socket.to(room).emit('chat message', msg);
@@ -216,6 +188,7 @@ io.of(/.*/).use((socket, next) => {
     });
     return next();
   } catch (err) {
+    console.log(`SERVER: Auth error - Token verification failed for ${socket.nsp.name}: ${err.message}`);
     return next(new Error('Authentication error: Invalid or expired token'));
   }
 });
@@ -223,7 +196,10 @@ io.of(/.*/).use((socket, next) => {
 io.of(/.*/).on('connection', (socket) => {
   if (socket.nsp.name === '/dashboard') return;
   const namespace = socket.nsp;
-  console.log(`User connected to namespace: ${namespace.name} with ID: ${socket.id}`);
+  console.log(`SERVER: Client connected to namespace: ${namespace.name} with ID: ${socket.id}`);
+  console.log(`SERVER: Current total connected sockets (io.sockets.sockets.size): ${io.sockets.sockets.size}`);
+  console.log(`SERVER: Sockets in default namespace (io.of('/').sockets.size): ${io.of('/').sockets.size}`);
+  console.log(`SERVER: Sockets in tenant1 namespace (io.of('/tenant1').sockets.size): ${io.of('/tenant1').sockets.size}`);
   socket.on('chat message', (msg) => {
     namespace.emit('chat message', msg);
     console.log(`SERVER EMIT: Message received in namespace ${namespace.name} and emitted to all: ${msg}`);
