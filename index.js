@@ -117,10 +117,25 @@ if (DASHBOARD_USERNAME && DASHBOARD_PASSWORD) {
             clients: []
         };
 
-        // Simplified stats collection for debugging
-        stats.clients.push(`Total connected: ${io.sockets.sockets.size}`);
-        stats.clients.push(`Default namespace: ${io.of('/').sockets.size}`);
-        stats.clients.push(`Tenant1 namespace: ${io.of('/tenant1').sockets.size}`);
+        const allNamespaces = io.nsps;
+        for (const [name, namespace] of allNamespaces.entries()) {
+            if (name === '/dashboard') continue;
+            stats.namespaces.push(name);
+            stats.rooms[name] = [];
+            const rooms = namespace.adapter.rooms;
+            if (rooms) {
+                for (const [room, sockets] of rooms.entries()) {
+                    if (!sockets.has(room)) {
+                        stats.rooms[name].push(room);
+                    } else {
+                        // This is a socket ID, not a room. We can count it as a client.
+                        // stats.clients.push(`${room} (${name})`); // Add client ID to list
+                    }
+                }
+            }
+            // Count clients in this namespace
+            stats.clients.push(`${namespace.sockets.size} clients in ${name}`);
+        }
 
         return stats;
     }
