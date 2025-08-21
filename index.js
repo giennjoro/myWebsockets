@@ -115,6 +115,7 @@ if (DASHBOARD_USERNAME && DASHBOARD_PASSWORD) {
         };
 
         const allSockets = await io.fetchSockets();
+        console.log('SERVER: getStats - allSockets count:', allSockets.length);
 
         const uniqueNamespaces = new Set();
         const clientsByNamespace = new Map();
@@ -123,6 +124,7 @@ if (DASHBOARD_USERNAME && DASHBOARD_PASSWORD) {
         for (const socket of allSockets) {
             const namespaceName = socket.nsp.name;
             uniqueNamespaces.add(namespaceName);
+            console.log(`SERVER: getStats - Processing socket ${socket.id} in namespace ${namespaceName}`);
 
             if (!clientsByNamespace.has(namespaceName)) {
                 clientsByNamespace.set(namespaceName, []);
@@ -135,9 +137,13 @@ if (DASHBOARD_USERNAME && DASHBOARD_PASSWORD) {
             for (const room of socket.rooms) {
                 if (room !== socket.id) {
                     roomsByNamespace.get(namespaceName).add(room);
+                    console.log(`SERVER: getStats - Socket ${socket.id} in room ${room}`);
                 }
             }
         }
+        console.log('SERVER: getStats - uniqueNamespaces:', Array.from(uniqueNamespaces));
+        console.log('SERVER: getStats - clientsByNamespace:', Object.fromEntries(clientsByNamespace));
+        console.log('SERVER: getStats - roomsByNamespace:', Object.fromEntries(roomsByNamespace));
 
         stats.namespaces = Array.from(uniqueNamespaces).filter(name => name !== '/dashboard');
 
