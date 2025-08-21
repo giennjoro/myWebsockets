@@ -96,9 +96,13 @@ if (DASHBOARD_USERNAME && DASHBOARD_PASSWORD) {
         console.log('Dashboard connected');
         const interval = setInterval(async () => {
             console.log('SERVER: Calling getStats...');
-            const stats = await getStats();
-            console.log('SERVER: Emitting stats:', stats);
-            socket.emit('stats', stats);
+            try {
+                const stats = await getStats();
+                console.log('SERVER: Emitting stats:', stats);
+                socket.emit('stats', stats);
+            } catch (error) {
+                console.error('SERVER: Error in getStats:', error);
+            }
         }, 5000);
         socket.on('disconnect', () => {
             console.log('Dashboard disconnected');
