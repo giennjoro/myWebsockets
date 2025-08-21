@@ -176,8 +176,26 @@ app.post('/broadcast', (req, res) => {
   namespace.to(room).emit('chat message', message);
   console.log(`SERVER EMIT: Broadcasted message to /${tenantId} room ${room}: ${message}`);
   console.log('SERVER: Debug - Raw broadcast message:', message);
+
+  let dashboardMessage = message;
+  if (typeof message === 'object' && message !== null) {
+    if (message.html) {
+      // Extract text from HTML using a simple regex for <span> tags within message-text
+      const match = message.html.match(/<div class="message-text bg-admin">\s*<span>(.*?)<\/span>/s);
+      if (match && match[1]) {
+        dashboardMessage = match[1].trim();
+      } else {
+        dashboardMessage = '[HTML message - text not found]';
+      }
+    } else {
+      dashboardMessage = JSON.stringify(message);
+    }
+  } else if (String(message) === '[object Object]') {
+    dashboardMessage = '[object Object] - content not parsed';
+  }
+
   if (DASHBOARD_USERNAME && DASHBOARD_PASSWORD) {
-    io.of('/dashboard').emit('message', { namespace: `/${tenantId}`, room, message: `(Broadcast) ${message}` });
+    io.of('/dashboard').emit('message', { namespace: `/${tenantId}`, room, message: `(Broadcast) ${dashboardMessage}` });
   }
   res.status(200).json({ message: 'Message broadcasted successfully' });
 });
@@ -223,8 +241,26 @@ io.of(/.*/).use((socket, next) => {
       socket.to(room).emit('chat message', msg);
       console.log(`SERVER EMIT: Client in ${namespace.name} room ${room} sent message: ${msg}`);
       console.log('SERVER: Debug - Raw chat message from client:', msg);
+
+      let dashboardMessage = msg;
+      if (typeof msg === 'object' && msg !== null) {
+        if (msg.html) {
+          // Extract text from HTML using a simple regex for <span> tags within message-text
+          const match = msg.html.match(/<div class="message-text bg-admin">\s*<span>(.*?)<\/span>/s);
+          if (match && match[1]) {
+            dashboardMessage = match[1].trim();
+          } else {
+            dashboardMessage = '[HTML message - text not found]';
+          }
+        } else {
+          dashboardMessage = JSON.stringify(msg);
+        }
+      } else if (String(msg) === '[object Object]') {
+        dashboardMessage = '[object Object] - content not parsed';
+      }
+
       if (DASHBOARD_USERNAME && DASHBOARD_PASSWORD) {
-        io.of('/dashboard').emit('message', { namespace: namespace.name, room: 'main', message: msg });
+        io.of('/dashboard').emit('message', { namespace: namespace.name, room: 'main', message: dashboardMessage });
       }
     });
     return next();
