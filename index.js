@@ -122,7 +122,10 @@ if (DASHBOARD_USERNAME && DASHBOARD_PASSWORD) {
         const roomsByNamespace = new Map();
 
         // Iterate over all connected sockets across all namespaces
+        console.log('SERVER: getStats - Total connected sockets:', io.sockets.sockets.size);
         for (const [socketId, socket] of io.sockets.sockets) {
+            console.log(`SERVER: getStats - Processing socket ID: ${socketId}, Namespace: ${socket.nsp.name}`);
+            console.log(`SERVER: getStats - Socket rooms:`, socket.rooms);
             const namespaceName = socket.nsp.name;
 
             if (namespaceName === '/dashboard') continue; // Skip dashboard clients
