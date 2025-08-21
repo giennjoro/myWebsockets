@@ -17,7 +17,12 @@ const io = new Server(server, {
   }
 });
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT;
+
+if (!PORT) {
+    console.error('Error: PORT environment variable is not set.');
+    process.exit(1);
+}
 
 const BROADCAST_API_KEY = process.env.BROADCAST_API_KEY || 'my_super_secret_broadcast_api_key';
 const DASHBOARD_USERNAME = process.env.DASHBOARD_USERNAME;
