@@ -215,5 +215,8 @@ io.of(/.*/).on('connection', (socket) => {
 
 server.listen(PORT, () => {
   console.log(`WebSocket server listening on port ${PORT}`);
+  console.log(`Server PID: ${process.pid}`);
+  console.log(`Server process.env.NODE_ENV: ${process.env.NODE_ENV}`);
+  console.log(`Server process.env.PORT: ${process.env.PORT}`);
 });
 
