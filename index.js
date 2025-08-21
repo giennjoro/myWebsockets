@@ -170,6 +170,7 @@ app.post('/broadcast', (req, res) => {
   }
   const namespace = io.of(`/${tenantId}`);
   namespace.to(room).emit('chat message', message);
+  console.log(`SERVER EMIT: Broadcasted message to /${tenantId} room ${room}: ${message}`);
   if (DASHBOARD_USERNAME && DASHBOARD_PASSWORD) {
     io.of('/dashboard').emit('message', { namespace: `/${tenantId}`, room, message: `(Broadcast) ${message}` });
   }
@@ -196,6 +197,7 @@ io.of(/.*/).use((socket, next) => {
     socket.on(room, (msg) => {
       const namespace = socket.nsp;
       socket.to(room).emit('chat message', msg);
+      console.log(`SERVER EMIT: Client in ${namespace.name} room ${room} sent message: ${msg}`);
       if (DASHBOARD_USERNAME && DASHBOARD_PASSWORD) {
         io.of('/dashboard').emit('message', { namespace: namespace.name, room, message: msg });
       }
@@ -212,6 +214,7 @@ io.of(/.*/).on('connection', (socket) => {
   console.log(`User connected to namespace: ${namespace.name} with ID: ${socket.id}`);
   socket.on('chat message', (msg) => {
     namespace.emit('chat message', msg);
+    console.log(`SERVER EMIT: Message received in namespace ${namespace.name} and emitted to all: ${msg}`);
     if (DASHBOARD_USERNAME && DASHBOARD_PASSWORD) {
         io.of('/dashboard').emit('message', { namespace: namespace.name, room: 'main', message: msg });
     }
