@@ -111,57 +111,9 @@ if (DASHBOARD_USERNAME && DASHBOARD_PASSWORD) {
     });
 
     async function getStats(io) {
-        const stats = {
-            namespaces: [],
-            rooms: {},
-            clients: []
-        };
-
-        const uniqueNamespaces = new Set();
-        const clientsByNamespace = new Map();
-        const roomsByNamespace = new Map();
-
-        // Iterate over all connected sockets using the adapter's sids
-        for (const [socketId, roomsSet] of io.sockets.adapter.sids) {
-            // Determine the namespace for this socket
-            let namespaceName = '/'; // Default namespace
-            for (const ns of io.of('/').server.nsps.keys()) {
-                if (ns !== '/' && roomsSet.has(ns)) { // If the socket is in a custom namespace room
-                    namespaceName = ns;
-                    break;
-                }
-            }
-
-            if (namespaceName === '/dashboard') continue; // Skip dashboard clients
-
-            uniqueNamespaces.add(namespaceName);
-
-            if (!clientsByNamespace.has(namespaceName)) {
-                clientsByNamespace.set(namespaceName, []);
-            }
-            clientsByNamespace.get(namespaceName).push(`${socketId} (${namespaceName})`);
-
-            if (!roomsByNamespace.has(namespaceName)) {
-                roomsByNamespace.set(namespaceName, new Set());
-            }
-            for (const room of roomsSet) {
-                // A room is not a socket ID if its name is different from the socketId
-                // and it's not the namespace name itself
-                if (room !== socketId && room !== namespaceName) {
-                    roomsByNamespace.get(namespaceName).add(room);
-                }
-            }
-        }
-
-        stats.namespaces = Array.from(uniqueNamespaces).filter(name => name !== '/dashboard').sort();
-
-        for (const nsName of stats.namespaces) {
-            stats.rooms[nsName] = Array.from(roomsByNamespace.get(nsName) || []).sort();
-            stats.clients = stats.clients.concat(clientsByNamespace.get(nsName) || []);
-        }
-        stats.clients.sort();
-
-        return stats;
+        console.log('SERVER: Debug - io.sockets.adapter.sids:', io.sockets.adapter.sids);
+        console.log('SERVER: Debug - io.sockets.adapter.rooms:', io.sockets.adapter.rooms);
+        return { namespaces: [], rooms: {}, clients: [] }; // Return empty for now
     }
 } else {
     console.warn('Dashboard disabled: DASHBOARD_USERNAME or DASHBOARD_PASSWORD not set.');
