@@ -142,8 +142,7 @@ if (DASHBOARD_USERNAME && DASHBOARD_PASSWORD) {
         res.status(403).send('Dashboard is disabled.');
     });
 }
-*/
-
+// Error handling middleware
 app.use((err, req, res, next) => {
   console.error(err.stack);
   if (process.env.NODE_ENV === 'development') {
