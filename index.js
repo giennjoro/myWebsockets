@@ -108,6 +108,8 @@ if (DASHBOARD_USERNAME && DASHBOARD_PASSWORD) {
 
     async function getStats() {
         console.log('SERVER: Inside getStats function (rewritten again).');
+        console.log('SERVER: getStats - io.sockets.adapter.sids:', io.sockets.adapter.sids);
+        console.log('SERVER: getStats - allNamespaces:', allNamespaces);
         const stats = {
             namespaces: [],
             rooms: {},
