@@ -19,6 +19,10 @@ const io = new Server(server, {
   }
 });
 
+// Global maps to track active clients and rooms
+const activeClients = new Map(); // Map<namespaceName, Set<socketId>>
+const activeRooms = new Map();    // Map<namespaceName, Map<roomName, Set<socketId>>>
+
 const PORT = process.env.PORT;
 
 if (!PORT) {
@@ -110,8 +114,36 @@ if (DASHBOARD_USERNAME && DASHBOARD_PASSWORD) {
         });
     });
 
-    async function getStats(io) {
-        return { namespaces: [], rooms: {}, clients: [] };
+    async function getStats() {
+        const stats = {
+            namespaces: [],
+            rooms: {},
+            clients: []
+        };
+
+        // Populate namespaces and clients from activeClients map
+        for (const [nspName, clientsSet] of activeClients.entries()) {
+            if (nspName === '/dashboard') continue;
+            stats.namespaces.push(nspName);
+            for (const clientId of clientsSet) {
+                stats.clients.push(`${clientId} (${nspName})`);
+            }
+        }
+
+        // Populate rooms from activeRooms map
+        for (const [nspName, roomsMap] of activeRooms.entries()) {
+            if (nspName === '/dashboard') continue;
+            stats.rooms[nspName] = [];
+            for (const [roomName, clientsSet] of roomsMap.entries()) {
+                stats.rooms[nspName].push(`${roomName} (${clientsSet.size} clients)`);
+            }
+            stats.rooms[nspName].sort();
+        }
+
+        stats.namespaces.sort();
+        stats.clients.sort();
+
+        return stats;
     }
 } else {
     console.warn('Dashboard disabled: DASHBOARD_USERNAME or DASHBOARD_PASSWORD not set.');
@@ -167,6 +199,21 @@ io.of(/.*/).use((socket, next) => {
     let room = decoded.userData.room;
     socket.join(room);
     console.log(`SERVER: Client ${socket.id} joined room ${room} in namespace ${socket.nsp.name}`);
+
+    // Add client to activeRooms map
+    if (!activeRooms.has(socket.nsp.name)) {
+      activeRooms.set(socket.nsp.name, new Map());
+    }
+    if (!activeRooms.get(socket.nsp.name).has(room)) {
+      activeRooms.get(socket.nsp.name).set(room, new Set());
+    }
+    activeRooms.get(socket.nsp.name).get(room).add(socket.id);
+
+    // Log room join to dashboard
+    if (DASHBOARD_USERNAME && DASHBOARD_PASSWORD) {
+      io.of('/dashboard').emit('message', { type: 'roomJoin', namespace: socket.nsp.name, room: room, socketId: socket.id });
+    }
+
     socket.on(room, (msg) => {
       const namespace = socket.nsp;
       socket.to(room).emit('chat message', msg);
@@ -186,6 +233,18 @@ io.of(/.*/).on('connection', (socket) => {
   if (socket.nsp.name === '/dashboard') return;
   const namespace = socket.nsp;
   console.log(`SERVER: Client connected to namespace: ${namespace.name} with ID: ${socket.id}`);
+
+  // Add client to activeClients map
+  if (!activeClients.has(namespace.name)) {
+    activeClients.set(namespace.name, new Set());
+  }
+  activeClients.get(namespace.name).add(socket.id);
+
+  // Log connection to dashboard
+  if (DASHBOARD_USERNAME && DASHBOARD_PASSWORD) {
+    io.of('/dashboard').emit('message', { type: 'connection', namespace: namespace.name, socketId: socket.id });
+  }
+
   console.log(`SERVER: Current total connected sockets (io.sockets.sockets.size): ${io.sockets.sockets.size}`);
   console.log(`SERVER: Sockets in default namespace (io.of('/').sockets.size): ${io.of('/').sockets.size}`);
   console.log(`SERVER: Sockets in tenant1 namespace (io.of('/tenant1').sockets.size): ${io.of('/tenant1').sockets.size}`);
@@ -198,6 +257,30 @@ io.of(/.*/).on('connection', (socket) => {
   });
   socket.on('disconnect', () => {
     console.log(`User disconnected from namespace: ${namespace.name} with ID: ${socket.id}`);
+
+    // Remove client from activeClients map
+    if (activeClients.has(namespace.name)) {
+      activeClients.get(namespace.name).delete(socket.id);
+      if (activeClients.get(namespace.name).size === 0) {
+        activeClients.delete(namespace.name);
+      }
+    }
+
+    // Remove client from activeRooms map
+    for (const [roomName, socketsInRoom] of activeRooms.get(namespace.name) || []) {
+      socketsInRoom.delete(socket.id);
+      if (socketsInRoom.size === 0) {
+        activeRooms.get(namespace.name).delete(roomName);
+      }
+    }
+    if (activeRooms.has(namespace.name) && activeRooms.get(namespace.name).size === 0) {
+      activeRooms.delete(namespace.name);
+    }
+
+    // Log disconnection to dashboard
+    if (DASHBOARD_USERNAME && DASHBOARD_PASSWORD) {
+      io.of('/dashboard').emit('message', { type: 'disconnection', namespace: namespace.name, socketId: socket.id });
+    }
   });
 });
 
