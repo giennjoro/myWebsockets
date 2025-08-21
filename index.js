@@ -122,8 +122,9 @@ if (DASHBOARD_USERNAME && DASHBOARD_PASSWORD) {
 
             // Get rooms for this namespace
             const roomsInNamespace = namespace.adapter.rooms;
-            if (roomsInNamespace && typeof roomsInNamespace.entries === 'function') {
-                for (const [roomName, roomSet] of roomsInNamespace.entries()) {
+            if (roomsInNamespace) { // Check if it's not undefined
+                if (typeof roomsInNamespace.entries === 'function') { // Check if it has entries method
+                    for (const [roomName, roomSet] of roomsInNamespace.entries()) {
                     // A room is not a socket ID if its name is different from any socket ID
                     // For simplicity, we'll assume roomName is a room if it's not a socket ID
                     if (!namespace.sockets.has(roomName)) { // If roomName is not a socket ID
