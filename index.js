@@ -97,7 +97,7 @@ if (DASHBOARD_USERNAME && DASHBOARD_PASSWORD) {
         const interval = setInterval(async () => {
             console.log('SERVER: Calling getStats...');
             try {
-                const stats = await getStats();
+                const stats = await getStats(io);
                 console.log('SERVER: Emitting stats:', stats);
                 socket.emit('stats', stats);
             } catch (error) {
@@ -110,7 +110,7 @@ if (DASHBOARD_USERNAME && DASHBOARD_PASSWORD) {
         });
     });
 
-    async function getStats() {
+    async function getStats(io) {
         const stats = {
             namespaces: [],
             rooms: {},
